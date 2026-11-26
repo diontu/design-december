@@ -4,29 +4,80 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Design December</title>
+  <meta name="description" content="One visually stunning website every day until Christmas.">
   <style>
-    :root { color-scheme: light dark; --bg: #fafafa; --fg: #111; --muted: #666; --card: #fff; --border: #e5e5e5; }
-    @media (prefers-color-scheme: dark) { :root { --bg: #0f0f0f; --fg: #f2f2f2; --muted: #999; --card: #1a1a1a; --border: #2a2a2a; } }
+    :root { color-scheme: light dark; --bg: #fafafa; --fg: #111; --muted: #6b6b70; --card: #fff; --border: #e5e5e5; --accent: #e8462b; --locked: #f1f1f2; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0b0b0d; --fg: #f4f4f5; --muted: #8b8b94; --card: #151518; --border: #26262b; --accent: #ff5a3c; --locked: #101013; } }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
-    main { max-width: 880px; margin: 0 auto; padding: 64px 16px; }
-    h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin: 0 0 8px; letter-spacing: -0.02em; }
-    p { color: var(--muted); margin: 0 0 40px; }
-    ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-    a { display: block; padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: inherit; text-decoration: none; transition: transform .15s; }
-    a:hover { transform: translateY(-2px); }
-    .num { font-size: 2rem; font-weight: 700; }
-    .label { color: var(--muted); font-size: .9rem; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+    main { max-width: 960px; margin: 0 auto; padding: 64px 16px 80px; }
+    h1 { font-size: clamp(2.2rem, 7vw, 4rem); margin: 0 0 8px; letter-spacing: -0.03em; }
+    .sub { color: var(--muted); margin: 0 0 32px; font-size: 1.05rem; }
+    .next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); margin: 0 0 40px; }
+    .next .k { font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+    .next .v { font-variant-numeric: tabular-nums; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 700; letter-spacing: -0.01em; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: middle; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    li a { display: block; height: 100%; padding: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
+    li a:hover { transform: translateY(-2px); border-color: var(--muted); }
+    li.locked a { background: var(--locked); }
+    li.locked .num { color: var(--muted); }
+    li.today a { border-color: var(--accent); }
+    .num { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+    .label { color: var(--muted); font-size: .85rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    li.today .label { color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { li a { transition: none; } .dot { animation: none; } }
   </style>
 </head>
 <body>
   <main>
     <h1>Design December</h1>
-    <p>One website design a day.</p>
-    <ul>
-      <li><a href="/1/"><div class="num">01</div><div class="label">Day 1</div></a></li>
-      <!-- cards -->
-    </ul>
+    <p class="sub">One visually stunning website every day until Christmas. A new one unlocks at 00:00 UTC.</p>
+    <div class="next" id="next" hidden><span class="k"><span class="dot"></span><span id="next-k"></span></span><span class="v" id="next-v"></span></div>
+    <ul id="days"></ul>
   </main>
+  <script>
+    (function () {
+      var YEAR = 2026, DAYS = 25;
+      var list = document.getElementById('days');
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var launch = function (d) { return Date.UTC(YEAR, 11, d); };
+      var items = [];
+      for (var d = 1; d <= DAYS; d++) {
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="/' + d + '/"><div class="num">' + pad(d) + '</div><div class="label"></div></a>';
+        list.appendChild(li);
+        items.push({ day: d, li: li, label: li.querySelector('.label') });
+      }
+      function fmt(ms) {
+        var t = Math.max(0, Math.floor(ms / 1000));
+        var days = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+        return (days ? days + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
+      }
+      function tick() {
+        var now = Date.now(), next = null, latest = null;
+        items.forEach(function (it) {
+          var left = launch(it.day) - now;
+          var open = left <= 0;
+          if (open) latest = it.day; else if (!next) next = it;
+          it.li.className = open ? '' : 'locked';
+          it.label.textContent = open ? 'Day ' + it.day : fmt(left);
+        });
+        if (latest) items[latest - 1].li.className = 'today';
+        var box = document.getElementById('next');
+        box.hidden = false;
+        if (next) {
+          document.getElementById('next-k').textContent = 'Day ' + next.day + ' unlocks in';
+          document.getElementById('next-v').textContent = fmt(launch(next.day) - now);
+        } else {
+          document.getElementById('next-k').textContent = 'All 25 days are open';
+          document.getElementById('next-v').textContent = 'Merry Christmas';
+        }
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day {{DAY}} · Coming soon · Design December</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root { color-scheme: dark; --bg: #0b0b0d; --fg: #f4f4f5; --muted: #8b8b94; --line: #26262b; --accent: #ff5a3c; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+    main { width: 100%; max-width: 760px; padding: 48px 16px; text-align: center; }
+    .eyebrow { font-size: .8rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 20px; }
+    h1 { font-size: clamp(2.2rem, 8vw, 4rem); letter-spacing: -0.03em; margin: 0 0 40px; font-weight: 700; }
+    .clock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 auto 32px; max-width: 560px; }
+    .unit { border: 1px solid var(--line); border-radius: 14px; padding: 18px 4px 14px; background: #121215; }
+    .num { display: block; font-variant-numeric: tabular-nums; font-size: clamp(2rem, 9vw, 3.6rem); font-weight: 700; line-height: 1; }
+    .lbl { display: block; margin-top: 10px; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .when { color: var(--muted); margin: 0 0 40px; line-height: 1.6; }
+    .when strong { color: var(--fg); font-weight: 600; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: middle; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+    @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+    a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+    a:hover { color: var(--fg); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow"><span class="dot"></span>Design December · Day {{DAY}}/25</p>
+    <h1 id="title">Opens soon</h1>
+    <div class="clock" aria-live="off">
+      <div class="unit"><span class="num" id="d">--</span><span class="lbl">Days</span></div>
+      <div class="unit"><span class="num" id="h">--</span><span class="lbl">Hours</span></div>
+      <div class="unit"><span class="num" id="m">--</span><span class="lbl">Minutes</span></div>
+      <div class="unit"><span class="num" id="s">--</span><span class="lbl">Seconds</span></div>
+    </div>
+    <p class="when" id="when">Unlocks <strong>December {{DAY}}, 00:00 UTC</strong></p>
+    <p><a href="/">← All days</a></p>
+  </main>
+  <script>
+    (function () {
+      var DAY = {{DAY}};
+      var LAUNCH = Date.UTC({{YEAR}}, 11, DAY);
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var $ = function (id) { return document.getElementById(id); };
+      try {
+        var local = new Date(LAUNCH).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        $('when').innerHTML = 'Unlocks <strong>December ' + DAY + ', 00:00 UTC</strong><br>That’s ' + local + ' your time';
+      } catch (e) {}
+      var opened = false;
+      function tick() {
+        var left = LAUNCH - Date.now();
+        if (left <= 0) {
+          $('d').textContent = $('h').textContent = $('m').textContent = $('s').textContent = '00';
+          if (!opened) { opened = true; $('title').textContent = 'Opening…'; setTimeout(function () { location.replace('/' + DAY + '/?t=' + Date.now()); }, 600); }
+          return;
+        }
+        var t = Math.floor(left / 1000);
+        $('d').textContent = pad(Math.floor(t / 86400));
+        $('h').textContent = pad(Math.floor(t % 86400 / 3600));
+        $('m').textContent = pad(Math.floor(t % 3600 / 60));
+        $('s').textContent = pad(t % 60);
+      }
+      // If we land here after launch (e.g. the deploy is a few minutes late), retry every 30s.
+      if (LAUNCH - Date.now() <= 0 && location.pathname.indexOf('/soon') === -1) {
+        $('title').textContent = 'Arriving any moment';
+        opened = true;
+        setTimeout(function () { location.reload(); }, 30000);
+      }
+      tick();
+      setInterval(tick, 250);
+    })();
+  </script>
+</body>
+</html>

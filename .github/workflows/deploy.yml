@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Releases happen at 23:00 UTC the night before each day. GitHub cron can run late,
+    # so poll several times through the release hour and once more after launch.
+    - cron: "5,20,35,50 23 30 11 *"
+    - cron: "5,20,35,50 23 1-24 12 *"
+    - cron: "5,20 0 1-25 12 *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        env:
+          SEAL_KEY: ${{ secrets.SEAL_KEY }}
+        run: bash tools/build.sh
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

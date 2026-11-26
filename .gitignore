@@ -1,2 +1,4 @@
 scheduled/
 .DS_Store
+.seal-key
+_site/
